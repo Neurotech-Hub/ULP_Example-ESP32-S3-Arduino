@@ -25,39 +25,44 @@ static void RTC_IRAM_ATTR esp_wake_stub_entry();
 const int ulp_threshold_value = 4;  // Define the threshold as a constant integer
 
 const ulp_insn_t ulp_program[] = {
-  // Initialize transition counter and previous state
-  I_MOVI(R3, 0),  // R3 <- 0 (reset the transition counter)
-  I_MOVI(R2, 0),  // R2 <- 0 (previous state, assume LOW initially)
+    // Initialize transition counter and previous state
+    I_MOVI(R3, 0),  // R3 <- 0 (reset the transition counter)
+    I_MOVI(R2, 0),  // R2 <- 0 (previous state, assume LOW initially)
 
-  // Main loop
-  M_LABEL(1),
+    // Main loop
+    M_LABEL(1),
 
-  // Read GPIO18 state (bit 28) via RTC_GPIO_IN_REG
-  I_RD_REG(RTC_GPIO_IN_REG, RTC_GPIO_INDEX + RTC_GPIO_OUT_DATA_S, RTC_GPIO_INDEX + RTC_GPIO_OUT_DATA_S),
+    // Read GPIO18 state (bit 28) via RTC_GPIO_IN_REG
+    I_RD_REG(RTC_GPIO_IN_REG, RTC_GPIO_INDEX + RTC_GPIO_OUT_DATA_S, RTC_GPIO_INDEX + RTC_GPIO_OUT_DATA_S),
 
-  // Compare current state (R0) with previous state (R2)
-  I_SUBR(R1, R0, R2),  // R1 = current state (R0) - previous state (R2)
+    I_WR_REG(RTC_GPIO_OUT_REG, LED_GPIO_INDEX + RTC_GPIO_OUT_DATA_S, LED_GPIO_INDEX + RTC_GPIO_OUT_DATA_S, R0),
 
-  // If the state has not changed, skip the increment and continue holding
-  I_MOVR(R0, R1), // move result into R0
+    // Save the current state in a temporary register (R1)
+    I_MOVR(R1, R0),  // R1 <- R0 (store current GPIO state temporarily)
 
-  I_BL(6, 1),  // If R1 == 0 (no state change), skip
+    // Compare current state (R1) with previous state (R2)
+    I_SUBR(R0, R1, R2),  // R0 = current state (R1) - previous state (R2)
 
-  // Increment the transition counter (only if a transition is detected)
-  I_ADDI(R3, R3, 1),  // Increment R3 by 1 (transition detected)
+    // If the state has not changed, skip the increment and continue holding
+    I_BL(5, 1),  // If R0 == 0 (no state change), skip the next 6 instructions
 
-  // Store the current state in R2 (for comparison in the next iteration)
-  I_MOVR(R2, R0),  // R2 = R0 (store the current state)
+    // Increment the transition counter (only if a transition is detected)
+    I_ADDI(R3, R3, 1),  // Increment R3 by 1 (transition detected)
 
-  // Store the transition counter in RTC_SLOW_MEM[15]
-  I_MOVI(R1, 15),   // Set R1 to address RTC_SLOW_MEM[15]
-  I_ST(R3, R1, 0),  // Store R3 (counter) into RTC_SLOW_MEM[15]
+    // Store the current state in R2 (for comparison in the next iteration)
+    I_MOVR(R2, R1),  // R2 <- R1 (store the current state for the next iteration)
 
-  // Delay to slow down the ULP program (adjust delay value if needed)
-  I_DELAY(0xFFFF),  // Introduce a delay to avoid fast looping
+    // Store the transition counter in RTC_SLOW_MEM[15]
+    I_MOVI(R1, 15),   // Set R1 to address RTC_SLOW_MEM[15]
+    I_ST(R3, R1, 0),  // Store R3 (counter) into RTC_SLOW_MEM[15]
 
-  M_BX(1),          // Loop back to label 1
+    // Delay to slow down the ULP program (adjust delay value if needed)
+    I_DELAY(0xFFFF),  // Introduce a delay to avoid fast looping
+
+    // Loop back to the start
+    M_BX(1),  // Loop back to label 1
 };
+
 
 // works for LED, delay is very short
 // const ulp_insn_t ulp_program[] = {
@@ -189,8 +194,8 @@ void init_ulp_program() {
   // Reserve memory starting after the ULP program for data
   memset(&RTC_SLOW_MEM[size], 0, CONFIG_ULP_COPROC_RESERVE_MEM - (size * sizeof(uint32_t)));
 
-  Serial.print("ULP Size: ");
-  Serial.println(size);
+  // Serial.print("ULP Size: ");
+  // Serial.println(size);
 
   // Initialize GPIO for ULP to monitor
   rtc_gpio_init(GPIO_SENSOR_PIN);
@@ -208,7 +213,7 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
-  esp_sleep_enable_timer_wakeup(1000 * 1000);  // debug
+  esp_sleep_enable_timer_wakeup(5000 * 1000);  // debug
 
   // Check if the ESP32 woke up from deep sleep
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
@@ -239,10 +244,13 @@ void setup() {
     // Set initial threshold in RTC memory
     // RTC_SLOW_MEM[ULP_THRESHOLD_ADDR] = ulp_threshold_value;  // Set threshold value
 
-    for (int i = 0; i < 16; i++) {                // Adjust the loop limit to print more or fewer values
-      uint32_t value = RTC_SLOW_MEM[i] & 0xFFFF;  // Read 16-bit value from RTC_SLOW_MEM
-      Serial.printf("RTC_SLOW_MEM[%d]: %u\n", i, value);
-    }
+    // for (int i = 0; i < 16; i++) {                // Adjust the loop limit to print more or fewer values
+    //   uint32_t value = RTC_SLOW_MEM[i] & 0xFFFF;  // Read 16-bit value from RTC_SLOW_MEM
+    //   Serial.printf("RTC_SLOW_MEM[%d]: %u\n", i, value);
+    // }
+
+    uint32_t value = RTC_SLOW_MEM[15] & 0xFFFF;
+    Serial.printf("Count: %u\n", value - 1);
 
     // Initialize ULP program but do NOT run it yet
     init_ulp_program();
