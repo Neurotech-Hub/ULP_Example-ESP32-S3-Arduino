@@ -26,7 +26,7 @@ const ulp_insn_t ulp_program[] = {
   M_LABEL(1),
 
   // Read GPIO18 state (bit 28) via RTC_GPIO_IN_REG
-  I_RD_REG(RTC_GPIO_IN_REG, 28, 28),  // Read GPIO18's state into R0 using bit 28
+  I_RD_REG(RTC_GPIO_IN_REG, RTC_GPIO_INDEX + RTC_GPIO_OUT_DATA_S, RTC_GPIO_INDEX + RTC_GPIO_OUT_DATA_S),  // Read GPIO18's state into R0 using bit 28
 
   // Check if GPIO18 is low (R0 < 1). If low, wake up the CPU.
   M_BL(2, 1),  // If R0 < 1 (i.e., if GPIO18 is low, branch to wakeup)
