@@ -25,7 +25,7 @@ const ulp_insn_t ulp_program[] = {
 
   // Main loop
   M_LABEL(1),
-  
+
   // Read RTC_GPIO_INDEX with RTC offset
   I_RD_REG(RTC_GPIO_IN_REG, RTC_GPIO_INDEX + RTC_GPIO_IN_NEXT_S, RTC_GPIO_INDEX + RTC_GPIO_IN_NEXT_S),
 
@@ -34,9 +34,9 @@ const ulp_insn_t ulp_program[] = {
 
   // Compare current state (R1) with previous state (R2)
   I_SUBR(R0, R1, R2),  // R0 = current state (R1) - previous state (R2)
-  I_BL(5, 1),  // If R0 == 0 (no state change), skip instructions
-  I_ADDI(R3, R3, 1),  // Increment R3 by 1 (transition detected)
-  I_MOVR(R2, R1),  // R2 <- R1 (store the current state for the next iteration)
+  I_BL(5, 1),          // If R0 == 0 (no state change), skip instructions
+  I_ADDI(R3, R3, 1),   // Increment R3 by 1 (transition detected)
+  I_MOVR(R2, R1),      // R2 <- R1 (store the current state for the next iteration)
 
   // Store the transition counter
   I_MOVI(R1, EDGE_COUNT),  // Set R1 to address RTC_SLOW_MEM[1]

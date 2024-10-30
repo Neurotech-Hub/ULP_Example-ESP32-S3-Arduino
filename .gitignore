@@ -1,2 +1,35 @@
+ # Ignore build and temporary files
+*.bin
+*.elf
+*.hex
+*.map
+*.eep
+*.o
+*.a
+*.d
+*.lst
 
+# Ignore compiled binaries
+*.ino.elf
+*.ino.bin
+*.ino.hex
+
+# Ignore Arduino core and library files
+/libraries/*/src/*.o
+/libraries/*/examples/*.o
+/libraries/*/utility/*.o
+
+# Ignore macOS specific files
 .DS_Store
+
+# Ignore Windows specific files
+Thumbs.db
+
+# Ignore settings and temporary files
+*.bak
+*.swp
+*.tmp
+*.log
+
+# Ignore Visual Studio Code settings
+.vscode/
