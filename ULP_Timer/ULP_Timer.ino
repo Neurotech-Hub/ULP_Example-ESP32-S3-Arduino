@@ -14,7 +14,7 @@ enum
     PROG_START    // Program start address
 };
 
-// ULP program source (written in assembly)
+// ULP program  using the ULP timer
 const ulp_insn_t ulp_program[] = {
     // Load counter value from RTC memory
     I_LD(R1, R0, COUNTER_ADDR), // Load value at COUNTER_ADDR into R1
@@ -22,6 +22,19 @@ const ulp_insn_t ulp_program[] = {
     I_ST(R1, R0, COUNTER_ADDR), // Store R1 back to COUNTER_ADDR
     I_HALT()                    // Halt until next timer wake
 };
+
+// ULP program using the ULP timer - does not work as I_HALT() is never called
+// const ulp_insn_t ulp_program[] = {
+//     // Load counter value from RTC memory
+//     I_LD(R1, R0, COUNTER_ADDR), // Load value at COUNTER_ADDR into R1
+//     I_ADDI(R1, R1, 1),          // Increment R1
+//     I_ST(R1, R0, COUNTER_ADDR), // Store R1 back to COUNTER_ADDR
+
+//     // forever loop after counter is incremented
+//     M_LABEL(1),
+//     I_DELAY(0xFFFF),
+//     M_BX(1),
+// };
 
 void setup()
 {
@@ -40,7 +53,7 @@ void setup()
     {
         // Only print counter value if we woke up from deep sleep
         Serial.printf("\nDeep sleep time: %d seconds\n", DEEP_SLEEP_TIME / 1000000);
-        Serial.printf("ULP timer period: %d seconds\n", ULP_TIMER_PERIOD / 1000000);
+        Serial.printf("ULP timer period: %d milliseconds\n", ULP_TIMER_PERIOD / 1000);
         Serial.printf("Counter value: %d\n", (int)RTC_SLOW_MEM[COUNTER_ADDR]);
     }
 
